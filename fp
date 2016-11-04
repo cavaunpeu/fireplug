@@ -138,16 +138,6 @@ def build_docker_image(docker_host, args):
 # ----
 # main
 
-
-def _get_cpuset_option(docker_host):
-    base_image = conf('docker', 'base_image')
-    num_proc = calc_num_processors(docker_host, base_image=base_image)
-    if num_proc == 1:
-        return '--cpuset-cpus="0"'
-    else:
-        return '--cpuset-cpus="0-{}"'.format(num_proc - 1)
-
-
 def sync_s3_bucket(docker_host, args, reverse=False):
     # Get info from configuration file
     working_image = conf('docker', 'working_image')
@@ -189,9 +179,8 @@ def run_docker(docker_host, script_args, args):
         conf('filesystem', 'mount_point'))
 
     docker_option_list = docker_machine_config(docker_host)
-    cpuset = _get_cpuset_option(docker_host)
     docker_option_list += [
-        'run', cpuset, '--rm', '-i', '-v', mount_path, working_image
+        'run', '--rm', '-i', '-v', mount_path, working_image
     ]
     docker_cmd = ['docker'] + docker_option_list + script_args
 
