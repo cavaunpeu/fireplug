@@ -43,7 +43,7 @@ def _docker_machine_cmd(cmd):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     ret = []
     for line in proc.stdout:
-        ret.append(line.rstrip())
+        ret.append( line.decode('utf-8').rstrip() )
         proc.stdout.flush()
     return ret
 
@@ -222,7 +222,7 @@ def describe_gcp_ipaddress(docker_host):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     ret = []
     for line in proc.stdout:
-        ret.append(line.rstrip())
+        ret.append( line.decode('utf-8').rstrip() )
         proc.stdout.flush()
 
     inspect_ret = yaml.load("\n".join(ret))
