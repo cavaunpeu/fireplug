@@ -80,22 +80,6 @@ def _docker_cmd(cmd):
     pass
 
 
-def calc_num_processors(docker_host, base_image='smly/alpine-kaggle'):
-    docker_option_list = docker_machine_config(docker_host)
-
-    docker_option_list += ['run', '--rm', '-i', base_image]
-    run_cmd = ['grep', 'processor', '/proc/cpuinfo']
-    docker_cmd = ['docker'] + docker_option_list + run_cmd
-
-    proc = subprocess.Popen(docker_cmd, stdout=subprocess.PIPE)
-    ret = []
-    for line in proc.stdout:
-        ret.append(line)
-    proc.wait()
-
-    return len(ret)
-
-
 def calc_num_current_process(docker_host):
     docker_option_list = docker_machine_config(docker_host)
 
