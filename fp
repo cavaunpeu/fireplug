@@ -284,11 +284,7 @@ def rsync_libraries(docker_host, args):
 
 
 def check_host_is_ready(docker_host):
-    # TODO: check running status
-    if calc_num_current_process(docker_host) == 0:
-        return True
-    else:
-        return False
+    return calc_num_current_process(docker_host) == 0
 
 
 def build_remote_library_paths_string(local_library_paths, base_path='/home/docker-user/'):
