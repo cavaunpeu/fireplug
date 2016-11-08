@@ -203,7 +203,7 @@ def describe_gcp_ipaddress(docker_host):
     return ipaddr
 
 
-def rsync_files(docker_host, args, reverse=False):
+def rsync_files(docker_host, args, sync_remote_path, sync_local_path, reverse=False):
     inspect_ret = docker_machine_inspect(docker_host)
     driver_name = inspect_ret['DriverName']
     if driver_name == 'google':
@@ -215,10 +215,6 @@ def rsync_files(docker_host, args, reverse=False):
     else:
         raise RuntimeError(
             "Unsupported DriverName is used: {}".format(driver_name))
-
-    # Load configurations
-    sync_datapath = get_single_config_file_value('sync', 'datapath')
-    sync_localpath = get_single_config_file_value('sync', 'localpath')
 
     # Enable to ssh login as root (need to consider here)
     cmd = ['sudo', 'cp', '/home/ubuntu/.ssh/authorized_keys', '/root/.ssh/']
@@ -241,8 +237,8 @@ def rsync_files(docker_host, args, reverse=False):
         '{}'.format(ssh_cmd),
         '--copy-links',
         '--progress',
-        sync_localpath,
-        'root@{}:{}'.format(ipaddr, sync_datapath)]
+        sync_local_path,
+        'root@{}:{}'.format(ipaddr, sync_remote_path)]
 
     if reverse is True:
         source_place = cmd[-2]
@@ -262,6 +258,12 @@ def rsync_files(docker_host, args, reverse=False):
     with open(os.devnull, 'w') as devnull:
         proc = subprocess.Popen(cmd, stderr=devnull)
         proc.wait()
+
+
+def rsync_data_files(docker_host, args, reverse):
+    sync_remote_path = get_single_config_file_value('sync', 'datapath')
+    sync_local_path = get_single_config_file_value('sync', 'localpath')
+    rsync_files(docker_host, args, sync_remote_path, sync_local_path, reverse=reverse)
 
 
 def check_host_is_ready(docker_host):
@@ -302,7 +304,7 @@ def run(args, remaining_args):
         # >>> Sync
         if not args.nosync and not args.outsync:
             if bucket_path == 'None':
-                rsync_files(docker_host, args)
+                rsync_data_files(docker_host, args, reverse=False)
             else:
                 sync_s3_bucket(docker_host, args)
 
@@ -313,7 +315,7 @@ def run(args, remaining_args):
         # >>> Sync
         if not args.nosync and not args.insync:
             if bucket_path == 'None':
-                rsync_files(docker_host, args, reverse=True)
+                rsync_data_files(docker_host, args, reverse=True)
             else:
                 sync_s3_bucket(docker_host, args, reverse=True)
 
