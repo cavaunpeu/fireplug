@@ -28,8 +28,8 @@ if os.path.exists('.fp'):
     __conf.read('.fp')
 
 
-def conf(k1, k2):
-    return __conf.get(k1, k2)
+def get_single_config_file_value(header, key):
+    return __conf.get(header, key)
 
 
 # --------------
@@ -99,7 +99,7 @@ def calc_num_current_process(docker_host):
 
 
 def build_docker_image(docker_host, args):
-    working_image = conf('docker', 'working_image')
+    working_image = get_single_config_file_value('docker', 'working_image')
     docker_option_list = docker_machine_config(docker_host)
 
     docker_option_list += ['build', '-t', working_image, '.']
@@ -124,12 +124,12 @@ def build_docker_image(docker_host, args):
 
 def sync_s3_bucket(docker_host, args, reverse=False):
     # Get info from configuration file
-    working_image = conf('docker', 'working_image')
-    bucket_path = conf('sync', 's3')
-    sync_to = conf('sync', 'datapath')
+    working_image = get_single_config_file_value('docker', 'working_image')
+    bucket_path = get_single_config_file_value('sync', 's3')
+    sync_to = get_single_config_file_value('sync', 'datapath')
     mount_path = "{}:{}".format(
-        conf('filesystem', 'hostside_path'),
-        conf('filesystem', 'mount_point'))
+        get_single_config_file_value('filesystem', 'hostside_path'),
+        get_single_config_file_value('filesystem', 'mount_point'))
 
     docker_option_list = docker_machine_config(docker_host)
     docker_option_list += [
@@ -157,10 +157,10 @@ def sync_s3_bucket(docker_host, args, reverse=False):
 
 
 def run_docker(docker_host, script_args, args):
-    working_image = conf('docker', 'working_image')
+    working_image = get_single_config_file_value('docker', 'working_image')
     mount_path = "{}:{}".format(
-        conf('filesystem', 'hostside_path'),
-        conf('filesystem', 'mount_point'))
+        get_single_config_file_value('filesystem', 'hostside_path'),
+        get_single_config_file_value('filesystem', 'mount_point'))
 
     docker_option_list = docker_machine_config(docker_host)
     docker_option_list += [
@@ -178,7 +178,7 @@ def run_docker(docker_host, script_args, args):
 
 
 def mkdir_datapath(docker_host, args):
-    sync_datapath = conf('sync', 'datapath')
+    sync_datapath = get_single_config_file_value('sync', 'datapath')
     cmd = ['sudo', 'mkdir', '-p', sync_datapath]
     cmd = ['docker-machine', 'ssh', docker_host] + cmd
 
@@ -217,8 +217,8 @@ def rsync_files(docker_host, args, reverse=False):
             "Unsupported DriverName is used: {}".format(driver_name))
 
     # Load configurations
-    sync_datapath = conf('sync', 'datapath')
-    sync_localpath = conf('sync', 'localpath')
+    sync_datapath = get_single_config_file_value('sync', 'datapath')
+    sync_localpath = get_single_config_file_value('sync', 'localpath')
 
     # Enable to ssh login as root (need to consider here)
     cmd = ['sudo', 'cp', '/home/ubuntu/.ssh/authorized_keys', '/root/.ssh/']
@@ -279,7 +279,7 @@ def run(args, remaining_args):
     sync path is defined on a config file, which is located on `.fp`.
     """
     host_list = docker_hosts()
-    bucket_path = conf('sync', 's3')
+    bucket_path = get_single_config_file_value('sync', 's3')
 
     if args.host is not None:
         if args.host in host_list:
