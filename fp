@@ -28,6 +28,10 @@ if os.path.exists('.fp'):
     __conf.read('.fp')
 
 
+def separate_comma_separated_path_string(comma_separated_path_string):
+    return [path.strip() for path in comma_separated_path_string.split(',')]
+
+
 def get_single_config_file_value(header, key):
     return __conf.get(header, key)
 
@@ -274,6 +278,12 @@ def check_host_is_ready(docker_host):
         return False
 
 
+def build_remote_library_paths_string(local_library_paths, base_path='/home/docker-user/'):
+    local_library_names = [path.split('/')[-1] for path in \
+        separate_comma_separated_path_string(comma_separated_path_string=local_library_paths)]
+    return ''.join([os.path.join(base_path, name) + ',' for name in local_library_names])
+
+
 def run(args, remaining_args):
     """
     Build docker image, sync files and run the specified command.
@@ -350,6 +360,8 @@ def init():
         "[5/5] Enter your base docker image (Default: smly/alpine-kaggle): "
     ).strip() or 'smly/alpine-kaggle'
 
+    remote_library_paths = build_remote_library_paths_string(local_library_paths=local_library_paths)
+
     if not project_name:
         raise RuntimeError('Please enter a project name')
 
@@ -408,12 +420,14 @@ s3 = {s3_path:s}
 datapath = {remote_data_path:s}
 localpath = {local_data_path:s}
 local_library_paths = {local_library_paths}
+remote_library_paths = {remote_library_paths}
 """.format(s3_path=s3_path,
            working_image=project_name,
            remote_data_path=remote_data_path,
            local_data_path=local_data_path,
            base_image=base_docker_image,
-           local_library_paths=local_library_paths
+           local_library_paths=local_library_paths,
+           remote_library_paths=remote_library_paths
 ))
 
 
