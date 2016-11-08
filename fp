@@ -36,6 +36,12 @@ def get_single_config_file_value(header, key):
     return __conf.get(header, key)
 
 
+def get_multiple_config_file_values(header, key):
+    string_of_values = __conf.get(header, key)
+    for value in string_of_values.split(','):
+        yield value.strip()
+
+
 # --------------
 # DOCKER-MACHINE
 
@@ -270,6 +276,13 @@ def rsync_data_files(docker_host, args, reverse):
     rsync_files(docker_host, args, sync_remote_path, sync_local_path, reverse=reverse)
 
 
+def rsync_libraries(docker_host, args):
+    local_library_paths = get_multiple_config_file_values('sync', 'local_library_paths')
+    remote_library_paths = get_multiple_config_file_values('sync', 'remote_library_paths')
+    for local_path, remote_path in zip(local_library_paths, remote_library_paths):
+        rsync_files(docker_host=docker_host, args=args, sync_remote_path=remote_path, sync_local_path=local_path, reverse=False)
+
+
 def check_host_is_ready(docker_host):
     # TODO: check running status
     if calc_num_current_process(docker_host) == 0:
@@ -314,7 +327,8 @@ def run(args, remaining_args):
         # >>> Sync
         if not args.nosync and not args.outsync:
             if bucket_path == 'None':
-                rsync_data_files(docker_host, args, reverse=False)
+                rsync_data_files(docker_host=docker_host, args=args, reverse=False)
+                rsync_libraries(docker_host=docker_host, args=args)
             else:
                 sync_s3_bucket(docker_host, args)
 
