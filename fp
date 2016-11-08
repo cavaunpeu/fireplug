@@ -330,38 +330,41 @@ def show_version():
 
 
 def init():
-    # ask project name and s3 bucket
-    project_name = input("[1/4] Enter your project name: ")
-    s3_bucket = input("[2/4] Enter your s3 bucket name (Default: None): ")
-    localpath = input(
-        "[3/4] Enter data path on local client (Default: data): ")
-    docker_img = input(
-        "[4/4] Enter your base docker image (Default: smly/alpine-kaggle): ")
+    project_name = input("[1/5] Enter your project name: ")
 
-    # Set default value if input value is empty
-    if s3_bucket.strip() == '':
-        s3_bucket = 'None'
-    if docker_img.strip() == '':
-        docker_img = 'smly/alpine-kaggle'
-    if localpath.strip() == '':
-        localpath = 'data'
+    s3_bucket = input(
+        "[2/5] Enter your s3 bucket name (Default: None): "
+    ).strip() or 'None'
 
-    # TODO: check .aws files work correctly.
+    local_data_path = input(
+        "[3/5] Enter data path on local client (Default: data): "
+    ).strip() or 'data'
+
+    local_library_paths = input(
+        "[4/5] Enter paths for local libraries you'd like you use, separated by commas (Default: None): "
+    ).strip() or 'None'
+
+    base_docker_image = input(
+        "[5/5] Enter your base docker image (Default: smly/alpine-kaggle): "
+    ).strip() or 'smly/alpine-kaggle'
+
+    if not project_name:
+        raise RuntimeError('Please enter a project name')
+
     if s3_bucket != 'None' and not os.path.exists('.aws'):
-        print("RuntimeError: Put your .aws config on current directory!")
-        sys.exit(1)
+        raise RuntimeError('Put your .aws config inside current directory')
 
-    # path
-    datapath = os.path.join("/data", project_name)
+    remote_data_path = os.path.join("/data", project_name)
     s3_path = "s3://{name:s}/{proj_name:s}".format(
         name=s3_bucket,
-        proj_name=project_name)
-    if s3_bucket == 'None' or s3_bucket == 'False':
+        proj_name=project_name
+    )
+    if s3_bucket in ['None', 'False']:
         s3_path = 'None'
 
     # write out .dockerignore
     if os.path.exists('./.dockerignore'):
-        raise RuntimeError(".dockerignore is already exists.")
+        raise RuntimeError(".dockerignore already exists")
 
     with open('./.dockerignore', 'w') as f:
         f.write("""*.swp
@@ -378,16 +381,16 @@ Dockerfile
         raise RuntimeError("Dockerfile is already exists.")
 
     with open("./Dockerfile", 'w') as f:
-        f.write("""FROM {docker_img:s}
-RUN ln -s {datapath:s} /root/data
+        f.write("""FROM {base_docker_image:s}
+RUN ln -s {remote_data_path:s} /root/data
 COPY ./ /root/
 WORKDIR /root
-""".format(docker_img=docker_img,
-           datapath=datapath))
+""".format(base_docker_image=base_docker_image,
+           remote_data_path=remote_data_path))
 
     # write out fp configuration file
     if os.path.exists('./.fp'):
-        raise RuntimeError(".fp is already exists.")
+        raise RuntimeError(".fp already exists")
 
     with open("./.fp", 'w') as f:
         f.write("""[filesystem]
@@ -395,18 +398,21 @@ hostside_path = /data
 mount_point = /data
 
 [docker]
-base_image = {base_name:s}
-working_image = {proj_name:s}
+base_image = {base_image:s}
+working_image = {working_image:s}
 
 [sync]
-s3 = {s3path:s}
-datapath = {filepath:s}
-localpath = {localpath:s}
-""".format(s3path=s3_path,
-           proj_name=project_name,
-           filepath=datapath,
-           localpath=localpath,
-           base_name=docker_img))
+s3 = {s3_path:s}
+datapath = {remote_data_path:s}
+localpath = {local_data_path:s}
+local_library_paths = {local_library_paths}
+""".format(s3_path=s3_path,
+           working_image=project_name,
+           remote_data_path=remote_data_path,
+           local_data_path=local_data_path,
+           base_image=base_docker_image,
+           local_library_paths=local_library_paths
+))
 
 
 if __name__ == '__main__':
